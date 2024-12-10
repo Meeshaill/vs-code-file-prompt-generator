@@ -1,15 +1,27 @@
 {
-  "name": "file-selector",
+  "name": "vs-file-promt-generator",
   "displayName": "VS File Prompt Generator",
-  "description": "A VS Code exntension that helps to generate coding prompts by including contextual information like selected files from your project",
-  "version": "0.0.1",
+  "description": "A VS Code extension that helps to generate coding prompts by including contextual information like selected files from your project",
+  "version": "0.0.6",
+  "publisher": "michaelhauck",
   "engines": {
     "vscode": "^1.95.0"
   },
   "categories": [
     "Other"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/michaelhauck/peopol-extension.git"
+  },
+  "bugs": {
+    "url": "https://github.com/michaelhauck/peopol-extension/issues"
+  },
+  "homepage": "https://github.com/michaelhauck/peopol-extension",
   "main": "./out/extension.js",
+  "activationEvents": [
+    "onView:fileSelectorView"
+  ],
   "contributes": {
     "views": {
       "explorer": [
@@ -32,12 +44,12 @@
     "menus": {
       "view/item/context": [
         {
-          "when": "view == fileSelectorView && viewItem == fileItemUnselected",
+          "when": "view == fileSelectorView && item.contextValue == 'fileItemUnselected'",
           "command": "file-selector.toggleSelection",
           "group": "inline"
         },
         {
-          "when": "view == fileSelectorView && viewItem == fileItemSelected",
+          "when": "view == fileSelectorView && item.contextValue == 'fileItemSelected'",
           "command": "file-selector.toggleSelection",
           "group": "inline"
         }
