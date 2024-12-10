@@ -1,0 +1,73 @@
+{
+  "name": "file-selector",
+  "displayName": "VS File Prompt Generator",
+  "description": "A VS Code exntension that helps to generate coding prompts by including contextual information like selected files from your project",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "views": {
+      "explorer": [
+        {
+          "id": "fileSelectorView",
+          "name": "File Selector"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "file-selector.toggleSelection",
+        "title": "Toggle File Selection"
+      },
+      {
+        "command": "file-selector.exportSelected",
+        "title": "Export Selected Files"
+      }
+    ],
+    "menus": {
+      "view/item/context": [
+        {
+          "when": "view == fileSelectorView && viewItem == fileItemUnselected",
+          "command": "file-selector.toggleSelection",
+          "group": "inline"
+        },
+        {
+          "when": "view == fileSelectorView && viewItem == fileItemSelected",
+          "command": "file-selector.toggleSelection",
+          "group": "inline"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "file-selector.exportSelected",
+          "when": "view == fileSelectorView",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.95.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "@typescript-eslint/eslint-plugin": "^8.17.0",
+    "@typescript-eslint/parser": "^8.17.0",
+    "eslint": "^9.16.0",
+    "typescript": "^5.7.2",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1"
+  }
+}
