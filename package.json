@@ -10,6 +10,9 @@
   "categories": [
     "Other"
   ],
+  "activationEvents": [
+    "onView:fileSelectorView"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/michaelhauck/peopol-extension.git"
@@ -19,9 +22,6 @@
   },
   "homepage": "https://github.com/michaelhauck/peopol-extension",
   "main": "./out/extension.js",
-  "activationEvents": [
-    "onView:fileSelectorView"
-  ],
   "contributes": {
     "views": {
       "explorer": [
@@ -44,12 +44,12 @@
     "menus": {
       "view/item/context": [
         {
-          "when": "view == fileSelectorView && item.contextValue == 'fileItemUnselected'",
+          "when": "view == fileSelectorView && viewItem == fileItemUnselected",
           "command": "file-selector.toggleSelection",
           "group": "inline"
         },
         {
-          "when": "view == fileSelectorView && item.contextValue == 'fileItemSelected'",
+          "when": "view == fileSelectorView && viewItem == fileItemSelected",
           "command": "file-selector.toggleSelection",
           "group": "inline"
         }
@@ -67,19 +67,15 @@
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile && npm run lint",
-    "lint": "eslint src",
-    "test": "vscode-test"
+    "pretest": "npm run compile",
+    "test": "npm run compile && node ./out/test/runTest.js"
   },
   "devDependencies": {
     "@types/vscode": "^1.95.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
-    "@typescript-eslint/eslint-plugin": "^8.17.0",
-    "@typescript-eslint/parser": "^8.17.0",
-    "eslint": "^9.16.0",
     "typescript": "^5.7.2",
-    "@vscode/test-cli": "^0.0.10",
-    "@vscode/test-electron": "^2.4.1"
+    "vsce": "^2.3.0",
+    "vscode-test": "^1.4.0"
   }
 }

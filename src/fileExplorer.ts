@@ -33,15 +33,11 @@ export class FileNode extends vscode.TreeItem {
         }
 
         super(label);
-        // Update the contextValue and iconPath depending on selection state
         this.contextValue = file.selected ? 'fileItemSelected' : 'fileItemUnselected';
 
-        // Use known, standard codicons:
-        // 'check' for selected, 'circle' for unselected
+        // Use a standard codicon for selected/unselected states
+        // Selected: 'check', Unselected: 'circle'
         this.iconPath = new vscode.ThemeIcon(file.selected ? 'check' : 'circle');
-
-        // Removed the id to allow full refresh of the node visuals when toggling
-        // this.id = file.uri.toString();
     }
 }
 
@@ -57,7 +53,6 @@ export class FileDataProvider implements vscode.TreeDataProvider<FileNode> {
         this.refreshFiles();
     }
 
-    // Load files from the workspace and restore selection state from workspaceState
     refreshFiles() {
         if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
             vscode.workspace.findFiles('**/*', '**/node_modules/**').then(uris => {
@@ -87,8 +82,8 @@ export class FileDataProvider implements vscode.TreeDataProvider<FileNode> {
         const file = this.files.find(f => f.uri.toString() === fileUri.toString());
         if (file) {
             file.selected = !file.selected;
-            this.saveSelectionState(); // Persist selection
-            this._onDidChangeTreeData.fire(); // Refresh the tree to update icons
+            this.saveSelectionState();
+            this._onDidChangeTreeData.fire();
         }
     }
 
@@ -100,7 +95,6 @@ export class FileDataProvider implements vscode.TreeDataProvider<FileNode> {
         return this.files;
     }
 
-    // Persist selected files in workspaceState
     saveSelectionState() {
         const selectedUris = this.files.filter(f => f.selected).map(f => f.uri.toString());
         this.context.workspaceState.update('selectedFiles', selectedUris);
