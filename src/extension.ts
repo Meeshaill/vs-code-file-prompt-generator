@@ -26,8 +26,14 @@ export function activate(context: vscode.ExtensionContext) {
             await exportSelectedFiles();
         },
     );
+    const refreshCommand = vscode.commands.registerCommand(
+        "file-selector.refreshFiles",
+        () => {
+            fileDataProvider.refreshFiles();
+        }
+    );
 
-    context.subscriptions.push(toggleSelectionCommand, exportCommand);
+    context.subscriptions.push(toggleSelectionCommand, exportCommand, refreshCommand);
 }
 
 function findOrCreateSubdir(arr: any[], dirName: string): any[] {

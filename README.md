@@ -1,10 +1,11 @@
 The "file-selector" extension is designed to help developers create structured prompts for AI-driven coding assistance by leveraging their project’s context. It allows you to select specific files from your workspace, gather their contents, and generate a comprehensive JSON file. This JSON file includes a hierarchical representation of your project's structure, the selected files with their content, and any diagnostic errors detected by Visual Studio Code.
 
 ## File Picker
-<img src="/file_selector.png" alt="Screenshot of the filepicker" />
+![Screenshot of the file picker](https://raw.githubusercontent.com/Meeshaill/vs-code-file-prompt-generator/main/File%20Selector.png)
 
 ## Exported AI Prompt File
-<img src="/aipromptfile.png" alt="Screenshot of the generated Prompt File" />
+![Screenshot of the generated Prompt File](https://raw.githubusercontent.com/Meeshaill/vs-code-file-prompt-generator/main/AIPromptFile.png)
+
 
 ## Features
 File Selection in a Custom View:
