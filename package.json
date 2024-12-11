@@ -2,7 +2,7 @@
   "name": "vs-file-promt-generator",
   "displayName": "VS File Prompt Generator",
   "description": "A VS Code extension that helps to generate coding prompts by including contextual information like selected files from your project",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "publisher": "michaelhauck",
   "engines": {
     "vscode": "^1.95.0"
@@ -44,22 +44,23 @@
       {
         "command": "file-selector.refreshFiles",
         "title": "Refresh Files",
-        "icon": "$(refresh)" 
+        "icon": "$(refresh)"
       }
     ],
     "menus": {
       "view/item/context": [
         {
-          "when": "view == fileSelectorView && viewItem == fileItemUnselected",
+          "when": "view == fileSelectorView && viewItem == 'fileItemUnselected'",
           "command": "file-selector.toggleSelection",
           "group": "inline"
         },
         {
-          "when": "view == fileSelectorView && viewItem == fileItemSelected",
+          "when": "view == fileSelectorView && viewItem == 'fileItemSelected'",
           "command": "file-selector.toggleSelection",
           "group": "inline"
         }
       ],
+
       "view/title": [
         {
           "command": "file-selector.exportSelected",

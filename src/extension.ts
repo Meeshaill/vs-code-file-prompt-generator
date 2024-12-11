@@ -14,8 +14,8 @@ export function activate(context: vscode.ExtensionContext) {
     const toggleSelectionCommand = vscode.commands.registerCommand(
         "file-selector.toggleSelection",
         (node) => {
-            if (node && node.file) {
-                fileDataProvider.toggleSelection(node.file.uri);
+            if (node && node.item && node.item.uri) {
+                fileDataProvider.toggleSelection(node.item.uri);
             }
         },
     );
@@ -36,79 +36,6 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(toggleSelectionCommand, exportCommand, refreshCommand);
 }
 
-function findOrCreateSubdir(arr: any[], dirName: string): any[] {
-    for (const item of arr) {
-        if (typeof item === "object" && item.hasOwnProperty(dirName)) {
-            return item[dirName];
-        }
-    }
-    const newDir = { [dirName]: [] };
-    arr.push(newDir);
-    return newDir[dirName];
-}
-
-function insertFileIntoStructure(structure: any, parts: string[]) {
-    if (parts.length === 0) return;
-
-    const current = parts[0];
-
-    if (parts.length === 1) {
-        // Datei im Root-Verzeichnis
-        const fileName = current;
-        if (!structure["."]) {
-            structure["."] = [];
-        }
-        structure["."].push(fileName);
-        return;
-    }
-
-    // Verzeichnis
-    const dirName = current;
-    if (!structure[dirName]) {
-        structure[dirName] = [];
-    }
-
-    const subParts = parts.slice(1);
-    if (subParts.length === 1) {
-        // Nächster Teil ist Datei
-        const fileName = subParts[0];
-        structure[dirName].push(fileName);
-    } else {
-        // Nächster Teil ist wieder ein Verzeichnis
-        const nextDir = subParts[0];
-        const remainder = subParts.slice(1);
-
-        const subdirArray = findOrCreateSubdir(structure[dirName], nextDir);
-
-        if (remainder.length === 1) {
-            // Datei einfügen
-            subdirArray.push(remainder[0]);
-        } else {
-            insertNestedDir(subdirArray, remainder);
-        }
-    }
-}
-
-function insertNestedDir(arr: any[], parts: string[]) {
-    const current = parts[0];
-    const remainder = parts.slice(1);
-
-    if (remainder.length === 0) {
-        // Datei
-        arr.push(current);
-        return;
-    }
-
-    // weiteres Verzeichnis
-    const subdirArray = findOrCreateSubdir(arr, current);
-
-    if (remainder.length === 1) {
-        subdirArray.push(remainder[0]);
-    } else {
-        insertNestedDir(subdirArray, remainder);
-    }
-}
-
 async function exportSelectedFiles() {
     const selected = fileDataProvider.getSelectedFiles();
     const allFiles = fileDataProvider.getAllFiles();
@@ -124,26 +51,16 @@ async function exportSelectedFiles() {
     const workspaceFolder = vscode.workspace.workspaceFolders[0].uri.fsPath;
 
     // Hierarchische Struktur aufbauen
+    // (Dieser Part bleibt im Prinzip gleich, wird aber jetzt nur für die JSON-Struktur benötigt.)
     const structure: any = {};
-
     for (const f of allFiles) {
-        const relPath = path.relative(workspaceFolder, f.uri.fsPath).replace(/\\/g, "/");
-        const parts = relPath.split("/");
-        
-        if (parts.length === 1) {
-            // Datei im Root
-            if (!structure["."]) {
-                structure["."] = [];
-            }
-            structure["."].push(parts[0]);
-        } else {
-            insertFileIntoStructure(structure, parts);
-        }
+        const relPath = path.relative(workspaceFolder, f.uri.fsPath).replace(/\\\\/g, "/");
+        insertFileIntoStructure(structure, relPath.split("/"));
     }
 
     const filesContent: { [key: string]: string } = {};
     for (const file of selected) {
-        const relPath = path.relative(workspaceFolder, file.uri.fsPath).replace(/\\/g, "/");
+        const relPath = path.relative(workspaceFolder, file.uri.fsPath).replace(/\\\\/g, "/");
         try {
             const fileContentBuffer = await vscode.workspace.fs.readFile(file.uri);
             filesContent[relPath] = fileContentBuffer.toString();
@@ -157,7 +74,7 @@ async function exportSelectedFiles() {
     for (const [diagUri, diagList] of allDiagnostics) {
         if (!diagList || diagList.length === 0) continue;
 
-        const relPath = path.relative(workspaceFolder, diagUri.fsPath).replace(/\\/g, "/");
+        const relPath = path.relative(workspaceFolder, diagUri.fsPath).replace(/\\\\/g, "/");
 
         for (const diag of diagList) {
             errors.push({
@@ -171,7 +88,7 @@ async function exportSelectedFiles() {
     // Ensure any unsaved changes in aiPrompt.json are saved
     await vscode.workspace.saveAll();
 
-    // Bestehende aiPrompt.json einlesen, um project-context und prompt zu erhalten
+    // Bestehende aiPrompt.json einlesen, um project-context, prompt und ggf. prompt-rules zu erhalten
     const aiPromptJsonUri = vscode.Uri.joinPath(
         vscode.workspace.workspaceFolders[0].uri,
         "aiPrompt.json"
@@ -179,6 +96,12 @@ async function exportSelectedFiles() {
 
     let existingPromptContext = "<User written description of his project, targets and the technology he is using>";
     let existingUserPrompt = "<User written specific task the AI should be working on>";
+    let existingPromptRules: string[] | undefined = undefined;
+    const defaultPromptRules = [
+        "Always deliver the full scripts with your additions, so that I can easily copy and paste them into my project",
+        "Always use the provided files and data structure to understand the project and deliver solutions that fit into the existing structure and functionality",
+        "Write your code with comments that are easily understandable and explain the purpose of the code"
+    ];
 
     try {
         const oldContent = (await vscode.workspace.fs.readFile(aiPromptJsonUri)).toString();
@@ -189,13 +112,20 @@ async function exportSelectedFiles() {
         if (oldData["prompt"]) {
             existingUserPrompt = oldData["prompt"];
         }
+        if (Array.isArray(oldData["prompt-rules"])) {
+            existingPromptRules = oldData["prompt-rules"];
+        }
     } catch (err) {
         // aiPrompt.json noch nicht vorhanden oder nicht lesbar -> Standardwerte bleiben.
     }
 
+    // Nur setzen, wenn noch nicht vorhanden
+    const finalPromptRules = existingPromptRules || defaultPromptRules;
+
     const data = {
         "project-context": existingPromptContext,
         "prompt": existingUserPrompt,
+        "prompt-rules": finalPromptRules,
         "structure": structure,
         "files": filesContent,
         "errors": errors,
@@ -204,7 +134,7 @@ async function exportSelectedFiles() {
     const jsonStr = JSON.stringify(data, null, 2);
     await vscode.workspace.fs.writeFile(aiPromptJsonUri, Buffer.from(jsonStr, "utf-8"));
 
-    // .gitignore aktualisieren (nur für aiPrompt.json, da aiPrompt.txt nicht mehr erstellt wird)
+    // .gitignore aktualisieren
     const gitignoreUri = vscode.Uri.joinPath(
         vscode.workspace.workspaceFolders[0].uri,
         ".gitignore",
@@ -233,4 +163,65 @@ async function exportSelectedFiles() {
     vscode.window.showInformationMessage(
         "aiPrompt.json created/updated and opened."
     );
+}
+
+function insertFileIntoStructure(structure: any, parts: string[]) {
+    if (parts.length === 0) return;
+
+    const current = parts[0];
+
+    if (parts.length === 1) {
+        // Datei im Root-Verzeichnis
+        if (!structure["."]) {
+            structure["."] = [];
+        }
+        structure["."].push(current);
+        return;
+    }
+
+    // Verzeichnis
+    const dirName = current;
+    if (!structure[dirName]) {
+        structure[dirName] = [];
+    }
+
+    const subParts = parts.slice(1);
+    if (subParts.length === 1) {
+        // Nächster Teil ist Datei
+        structure[dirName].push(subParts[0]);
+    } else {
+        // tiefer verschachtelte Struktur
+        insertNestedDir(structure[dirName], subParts);
+    }
+}
+
+function insertNestedDir(arr: any[], parts: string[]) {
+    const current = parts[0];
+    const remainder = parts.slice(1);
+
+    function findOrCreateSubdir(arr: any[], dirName: string): any[] {
+        for (const item of arr) {
+            if (typeof item === "object" && item.hasOwnProperty(dirName)) {
+                return item[dirName];
+            }
+        }
+        const newDir = { [dirName]: [] };
+        arr.push(newDir);
+        return newDir[dirName];
+    }
+
+    if (remainder.length === 0) {
+        // Datei
+        arr.push(current);
+        return;
+    }
+
+    // weiteres Verzeichnis
+    const subdirArray = findOrCreateSubdir(arr, current);
+
+    if (remainder.length === 1) {
+        subdirArray.push(remainder[0]);
+    } else {
+        insertNestedDir(subdirArray, remainder);
+    }
 }
